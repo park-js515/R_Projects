@@ -1,0 +1,404 @@
+---
+title: "HW 5"
+author: "164693 박주성"
+date: '2020 5 25 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F)
+```
+
+# 1 
+- Canberra distance (Lance, Williams, Adkins)
+$$d_{CAD}(i,\ j) = \frac{\sum_{t = 1}^N |x_{it} - x_{jt}|}{{|x_{it}| + |x_{jt}|}} \\  where, \ x_i' = (x_{i1},\  x_{i2}, \ ... \, \ x_{ip})$$
+**특징** :
+1. 분자와 분모가 0인 항은 합계에서 생략되며 값이 없는것으로 표시한다.  
+2. 항상 양수의 값을 갖는다.  
+3. 원점을 기준으로 하는 측정에서 편향되기 쉬우며, 0에 가까운 값에 민감하게 반응한다.  
+4. Manhattan distance의 weighted version이다.  
+
+&nbsp;
+
+- Minkovski distance (Hermann Minkovski)
+$$d_{p}(i,\ j) = (\sum_{t \ = \ 1}^n|x_{it} \ - \ x_{jt}|^{1/p})^p, \\ where, \ x_i' = (x_{i1},\  x_{i2}, \ ... \, \ x_{in})$$
+**특징** :  
+1. Euclidean distance(L2 norm), Manhattan distance(L1 norm)의 gerneralization(일반화)이다.
+2. 보통 Lp norm이라고 한다.
+
+&nbsp;
+
+- Manhattan distance  
+$$d_1(i,\ j) = \sum_{t \ = \ 1}^p|x_{it} - x_{jt}| \\ where, \ x_i' = (x_{i1},\  x_{i2}, \ ... \, \ x_{ip})$$
+**특징** :
+1. L1 norm이라고 불리우며, 두 점 사이의 거리 좌표상의 절대 차이값들의 합이다.
+2. Minkovski distance에서 p = 1 로 지정하면 이 형태가 된다. (즉, special case)
+
+&nbsp;
+
+# 2
+Canberra, Minkovski distance는 Covariance Matrix를 사용하지 않으며, 각 변수들이 평균들이 얼마나 차이가 나는지 계산하기 위해서  
+$\mu_{it}, \ \mu_{jt}$ 사이의 거리를 구한다.  
+```{r}
+skulls <- read.csv("Egyptian skulls.csv", header = T, sep = ",")
+attach(skulls)
+means.df <- aggregate(as.matrix(skulls[,2:5]),list(Period), mean)
+means.df
+```
+
+&nbsp;
+
+## 거리계산 
+skulls데이터는 시간이 3, 1, 2, 4, 5의 순서대로 데이터가 정렬되어 있기에 적절한 변형을 두 거리에 취해줍니다.  
+
+- Canberra distance  
+```{r}
+d_cad <- dist(as.matrix(means.df), method = "canberra") # dist
+d_cad <- as.matrix(d_cad)[, c(2, 3, 1, 4, 5)] # matrix
+d_cad <- d_cad[c(2, 3, 1, 4, 5),]
+colnames(d_cad) <- levels(Period)[c(2, 3, 1, 4, 5)]
+rownames(d_cad) <- levels(Period)[c(2, 3, 1, 4, 5)]
+d_cad <- as.dist(d_cad)
+d_cad
+```
+
+&nbsp;
+
+- Minkowski distance  
+dist함수에서 minkovski의 p는 2가 기본설정입니다. 이는 L2 norm이므로 euclidean distance 가 됩니다.  
+제가 바라는 것은 데이터 차원만큼의 p를 원하기에 다음과 같이 사용합니다. 
+```{r}
+d_p <- dist(as.matrix(means.df), method = "minkowski", p = ncol(skulls) - 1) # dist
+d_p <- as.matrix(d_p)[, c(2, 3, 1, 4, 5)] # matrix
+d_p <- d_p[c(2, 3, 1, 4, 5),]
+colnames(d_p) <- levels(Period)[c(2, 3, 1, 4, 5)]
+rownames(d_p) <- levels(Period)[c(2, 3, 1, 4, 5)]
+d_p <- as.dist(d_p)
+d_p
+```
+
+&nbsp;
+
+Creating the time matrix (1000년 단위)
+```{r}
+T.Dist <- matrix(c(0.0,0.70,2.15,3.80,4.15,
+                   0.70,0.0,1.45,3.10,3.45,
+                   2.15,1.45,0.0,1.65,2.00,
+                   3.80,3.10,1.65,0.0,0.35,
+                   4.15,3.45,2.00,0.35,0.0),nrow=5,ncol=5)
+colnames(T.Dist)=levels(Period)[c(2,3,1,4,5)]
+rownames(T.Dist)=levels(Period)[c(2,3,1,4,5)]
+T.Dist <- as.dist(T.Dist)
+T.Dist
+```
+
+&nbsp;
+
+## mantel test 
+```{r}
+library(vegan)
+```
+
+&nbsp;
+
+현재 검정하려는 가설은 다음과 같다. 
+$$H_0 : \rho = 0 \quad vs \quad H_1 : not \quad H_0$$
+&nbsp;
+
+- Mantel test between Canberra and time distances 
+```{r}
+mantel(d_cad, T.Dist)
+```
+Caberra distance를 이용해서 Mantel test한 결과, $\rho$ = 0.9548, empirical p-value(significance) = 0.025 를 얻었다.  
+(p-value가 0.025 = 3/120 인 것으로 보아서, 3 번째로 높은 값이라는 것을 추측할 수 있다.)
+$\alpha$ = 0.05 라고 했을 때, $\alpha$ > p_value 이므로 귀무가설을 기각하게 된다. 즉 상관관계가 존재한다.  
+
+&nbsp;
+
+- Mantel test between Minkowski and time distances
+```{r}
+mantel(d_p, T.Dist)
+```
+Minkowski distance를 이용해서 Mantel test한 결과, $\rho$ = 0.9477, empirical p-value(significance) = 0.025 를 얻었다.  
+$\alpha$ = 0.05 라고 했을 때, $\alpha$ > p_value 이므로 귀무가설을 기각하게 된다. 즉 상관관계가 존재한다.  
+이는 위의 결과와 동일하다. 
+
+&nbsp;
+
+- Mantel test betwwen Canberra and Minkowski
+```{r}
+mantel(d_cad, d_p)
+```
+참고적으로 두 거리의 상관관계도 파악했다. 시행한 결과 $\rho$ = 0.9635, p-value = 0.0083333 을 얻을 수 있다.  
+결과론적으로 상관관계가 있다는 것을 확인할 수 있다 
+
+&nbsp;
+
+```{r}
+rm(list = ls())
+```
+
+&nbsp;
+
+# 3 
+현재의 귀무가설은 다음과 같다. 
+$$H_0: \mu_x = \mu_y$$
+
+```{r}
+x <- c(7, 5, 8, 9, 6) 
+y <- c(9, 10, 13, 11, 12)
+
+xy <- c(x,y)
+all.combn <- combn(1:10, 5)
+n.combn <- ncol(all.combn)
+t.all <- rep(0,n.combn)
+for(i in 1:n.combn){
+    t.all[i] <- t.test(xy[all.combn[,i]], xy[-all.combn[,i]])$statistic
+}
+```
+
+&nbsp;
+
+```{r}
+# One-sided test:
+empirical.pvalue <- sum(t.all <= t.all[1])/n.combn
+cat("empirical p-value = ", empirical.pvalue)
+```
+
+&nbsp;
+
+```{r}
+# two-sided test:
+empirical.pvalue <- sum(abs(t.all) >= abs(t.all[1]))/n.combn
+cat("empirical p-value = ", empirical.pvalue)
+```
+
+만약 $\alpha$ = 0.05 라면, 단측검정과 양측검정에서 모두 기각된다.  
+즉 두 그룹의 평균이 같다고 할 수 없다. 
+
+&nbsp;
+
+```{r}
+rm(list = ls())
+```
+
+&nbsp;
+
+# 4
+![](C:/Users/PJS/Desktop/MyR/no_4.jpg)
+&nbsp;
+
+# 5
+
+- 대략적인 전처리 및 데이터 확인 
+
+```{r}
+data <- read.csv("table6_6.csv")
+data[, -1] <- (data[,-1] / apply(data[, -1], 1, sum))
+head(data)
+```
+현재 크기로 인한 차이보다는 모양으로 인한 차이를 알고 싶기에 대안적인 방법(sum으로 나눠서 비율로 표현)을 사용합니다.
+
+&nbsp;
+
+```{r}
+round(cor(data[, -1]), 4)
+```
+
+&nbsp;
+
+
+- PCA 및 분석 
+```{r}
+data_pca <- prcomp(data[, -1], scale = TRUE)
+summary(data_pca)
+```
+주성분 분석 실행한 결과 2개의 주성분의 고윳값이 1보다 컸습니다.  보통은 고윳값이 1을 넘는 것을 사용하기에 분석에 2개의 주성분을 사용합니다.  
+고유값이 2개의 주성분으로 데이터의 77%가량의 변동을 표현할 수 있었습니다.  
+
+&nbsp;
+
+```{r}
+loadings <- data_pca$rotation
+loadings
+```
+PC1은 컵의 특성을 나타내는 X1, X2, X3에 대한 loading들이 양수의 값을 가지고 있기 때문에 컵의 특성을 나타내는 변수라고 생각합니다.   
+그리고 PC2는 컵받침의 특성을 X4와 X5에 대한 loading들이 상대적으로 매우 크기에 컵받침의 특성을 나타내는 변수라고 생각합니다.  
+(PCA는 주관적이므로 제 주관이 많이 담겨 있습니다.)
+
+&nbsp;
+
+- 그래프로 표현
+
+```{r}
+scores <- data.frame(data_pca$x)
+plot(scores$PC1, scores$PC2, type = "n",
+     xlab = "PC1", ylab = "PC2", main = "PC1 vs PC2")
+text(scores$PC1, scores$PC2,labels=rownames(data), cex=0.5)
+abline(h = 0.5, col = 2)
+abline(v = 1, col = 2)
+text(-1, -1, "cluster 1", cex = 1, col = 4)
+text(2, 2, "cluster 2", cex = 1, col = 4)
+```
+
+두 개의 주성분을 축으로 데이터의 산점도를 표시한 결과, 대략 2개의 군집이 있는 것으로 판단했습니다. 그에 따라서 두 개의 선을 그어서 대략적으로 나누었는데, 전체의 자료 중 3개 정도는 좀 특이한 경우라고 여겨지는 것으로 확인됩니다.  
+
+따라서 주성분 분석을 시행한 결과로 대략적으로 2개의 비슷한 군집이 있었으며, 3개의 특이한 컵들이 있었다는 판단을 할 수 있습니다.
+
+
+&nbsp;
+
+```{r}
+rm(list = ls())
+```
+
+&nbsp;
+
+# 6
+```{r}
+data <- read.csv("table6_7.csv")
+compass <- factor(c("s", "m", "w", "s", "m",
+                   "n", "m", "n", "w", "s",
+                   "m", "w", "s", "w", "n",
+                   "m", "s", "s", "s", "n",
+                   "m", "w", "m", "m", "s"))
+lw <- factor(c("w", "l", "l", "w", "l",
+        "w", "w", "w", "w", "w",
+        "l", "w", "w", "w", "w",
+        "w", "w", "w", "w", "w",
+        "l", "w", "w", "w", "w"))
+
+data$compass <- compass
+data$lw <- lw
+
+head(data)
+```
+데이터를 처음 받았을 때, 어떻게 분석할 수 있을지 생각했습니다. 처음에는 GDP를 생각했지만, 생각보다 찾기가 어려웠습니다.  
+그에 따라서 동서남북, 바다가 접해있느냐에 따라서 나눴습니다.  
+
+국가에 따라서 동서남북을 통해서 나눌려고 했습니다. 그런데 여기서 정치적 원인(2차 세계대전의 사회주의)로 인해서 동유럽 대신  
+중유럽이라는 말을 사용하게 되었습니다. 따라서 m은 동부 유럽이라고 생각하는 것이 맞을 것입니다.(소련은 동유럽 -> 중유럽)
+
+국가에 따라서 내륙과 바다를 접하는 곳을 구분했는데, 내륙은 land의 "l"을 사용했고, 바다를 접하는 곳은 water의 "w"을 사용했습니다.
+
+&nbsp;
+
+```{r}
+data_pca <- prcomp(data[, -c(1, 11, 12, 13)], scale = TRUE)
+summary(data_pca)
+```
+주로 고윳값이 1보다 큰 것을 사용하므로 총 3개의 PC를 사용합니다. (분석에선 총합을 사용하지 않습니다.)
+
+&nbsp;
+
+```{r}
+loadings <- data_pca$rotation
+loadings
+```
+PC1은 시리얼, 견과류, 과일 및 야채에서 양수의 loadings을 가지는 것을 확인할 수 있습니다.  
+      땅에서 자라는 것(곡류)과 관련이 있는 변수로 생각할 수 있습니다.  
+PC2는 생선과 관련된 loading이 매우 높은 것을 확인할 수 있고, starch, 과일 및 야채에서 양수의 loading을 가집니다.  
+      생선 및 녹말, 야채 등 골고루 먹는 것과 관련이 있는 변수로 생각할 수 있습니다.  
+PC3는 white meat(주로 조류)와 관련된 loading이 높고, 녹말, 야채 등에서 양수의 loading을 가집니다.  
+      조류 및 녹말, 야채 등 골고루 먹는 것과 관련있는 변수로 생각할 수 있습니다.
+      
+크게 생각하면, PC1은 곡물, PC2는 생선, PC3는 조류와 주로 관련된 주성분이라고 생각할 수 있습니다. 
+
+&nbsp;
+
+- 그래프를 통한 데이터 탐색
+```{r}
+scores <- data.frame(data_pca$x)
+plot(scores$PC1, scores$PC2, 
+     pch = ifelse(compass == "m", 1,
+                  ifelse (compass == "w", 2,
+                          ifelse (compass == "s", 3, 4))),
+     col = ifelse(lw == "l", 2,1),
+     xlab = "PC1", ylab = "PC2", main = "PC1 vs PC2")
+legend("topleft", legend = c("m", "w", "s", "n"), pch = c(1, 2, 3 , 4))
+```
+
+```{r}
+plot(scores$PC1, scores$PC3, 
+     pch = ifelse(compass == "m", 1,
+                  ifelse (compass == "w", 2,
+                          ifelse (compass == "s", 3, 4))),
+     col = ifelse(lw == "l", 2,1),
+     xlab = "PC1", ylab = "PC3", main = "PC1 vs PC3")
+legend("topright", legend = c("m", "w", "s", "n"), pch = c(1, 2, 3 , 4), horiz = T)
+```
+
+```{r}
+plot(scores$PC2, scores$PC3, 
+     pch = ifelse(compass == "m", 1,
+                  ifelse (compass == "w", 2,
+                          ifelse (compass == "s", 3, 4))),
+     col = ifelse(lw == "l", 2,1),
+     xlab = "PC2", ylab = "PC3", main = "PC2 vs PC3")
+legend("topright", legend = c("m", "w", "s", "n"), pch = c(1, 2, 3 , 4), horiz = T)
+```
+
+
+&nbsp;
+
+- 내륙과 바다에 대해서(빨간색: 내륙, 검정색: 바다와 인접)  
+그래프를 확인하면 내륙과 바다를 인접한 곳과 차이가 있는 것을 확인할 수 없습니다. 도움이 되진 않습니다.
+
+&nbsp;
+
+
+- PC1관점  
+PC1에서 바라봤을 때, 남부나 중부는 비교적 구분이 잘 됬습니다만, 북부와 서부가 잘 비교가 되지 않습니다.
+
+```{r}
+index <- (compass == "n" | compass == "w")
+t.test(scores$PC1[index] ~ compass[index], data = scores)
+```
+t-test에서도 차이가 없다는 것을 확인할 수 있습니다. 
+
+순서 : s m  (n = w), 내림차순 
+
+&nbsp;
+
+- PC2 관점  
+PC2에서 바라봤을 때, 남부 지방에서 약간 미미하게 차이나고, 대부분은 비슷합니다. 
+
+```{r}
+aggregate(scores$PC2, by = list(compass), mean)
+```
+
+```{r}
+pairwise.t.test(scores$PC2, compass, p.adjust = "none", pool.sd = T)
+```
+compass에 따른 PC2의 크기는 s > n > w > m 이지만,  
+피셔의 최소유의차검정(LSD)에 따르면 차이가 없는 것으로 확인됩니다. 
+순서 : s = n = w = m, 내림차순  
+
+&nbsp;
+
+- PC3 관점  
+PC3에서 바라봤을 때도, 역시 차이를 알아보기 어렵습니다. 
+
+```{r}
+aggregate(scores$PC3, by = list(compass), mean)
+```
+
+```{r}
+pairwise.t.test(scores$PC3, compass, p.adjust = "none", pool.sd = T)
+```
+차이가 어느정도 존재 
+
+순서 : m > w = s > n, 내림차순
+
+&nbsp;
+
+## 결론
+주성분 분석을 행한 결과, 곡식 등 땅에서 자라는 것은 compass(동서남북)에 따라서 차이있고, 조류 섭취에서도 어느정도의 차이가 있다, 다른 항목에서는 눈에 띄는 차이가  
+없는 것으로 생각된다. 그리고 바다를 접하는지의 여부에 따라서의 차이는 없었다.
+
+## 생각
+새로운 범주를 만들어서 분석에 사용해도 되는지는 문제가 될 수 있지만 효율적인 방법이라고 생각했습니다. 국가와 국가끼리 비교하는 것은  
+너무 경우의 수가 많다고 생각합니다.
+
+만약 GDP가 있었다면 좀 더 흥미로운 분석이 될 수 있을 것이라는 생각이 듭니다. 
+

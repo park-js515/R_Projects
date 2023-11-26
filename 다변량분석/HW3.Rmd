@@ -1,0 +1,248 @@
+---
+title: "HW3"
+author: "164693 박주성"
+date: '2020 4 27 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F)
+```
+
+먼저 실행에 앞서 패키지들을 불러옵니다.
+```{r}
+library(aplpack)
+library(Hotelling)
+library(car)
+library(onewaytests)
+library(heplots)
+```
+
+# 1
+
+## 1) 함수 생성
+```{r}
+Z_2mean <- function(x1, x2, s1, s2, alpha){
+  TS0 <- (mean(x1) - mean(x2))/sqrt(s1^2/length(x1) + s2^2/length(x2))
+  P_value <- 2 * (1 - pnorm(abs(TS0)))
+  
+  cat("TS0 = ", TS0, ",P_value =", P_value, "\n")
+  cat("Under alpha = ", alpha, ",")
+  if (P_value > alpha) {cat("fail to reject H0 \n")} 
+  else {cat("reject H0 \n")}
+  
+}
+```
+
+
+## 2) 실행
+```{r}
+x1 <- rnorm(150, mean = 5.5, sd = 10)
+x2 <- rnorm(200, mean = 10, sd = 50)
+
+Z_2mean(x1, x2, 10, 8, 0.05)
+
+x3 <- rnorm(150, mean = 0, sd = 1)
+x4 <- rnorm(200, mean = 0.01, sd = 3)
+
+Z_2mean(x3, x4, 1, 3, 0.05)
+```
+
+***
+&nbsp;
+
+
+1번을 풀면서 사용했던 변수들이 영향이 있을 수 있기 때문에 다음과 같은 코드를 실행합니다.
+
+```{r}
+rm(list = ls())
+```
+
+***
+&nbsp;
+
+# 2
+```{r}
+CS <- read.csv("Canine_Species.csv", header = T, sep = ",")
+attach(CS)
+head(CS)
+```
+
+## 1)
+
+&nbsp;
+
+i) Test for significant differences between the five species in terms of the mean values and the variation in the nine variables. 
+
+```{r}
+result <- manova(as.matrix(CS[, 1:9]) ~ Species)
+summary(result) # 가장 로버스트한 Pillai의 방법을 사용합니다. 
+#summary(result, test = "Wilks")
+#summary(result, test = "Roy")
+#summary(result, test = "Hotelling-Lawley")
+
+```
+
+```{r}
+boxM(CS[, 1:9], matrix(CS[, 11]))
+```
+
+위의 결과들을 참고한다면 모든 종류의 개들의 평균과 분산이 같다고 말할 순 없을 것 같습니다. 두 코드에서 모두 p-value가 매우 낮은 값을 가졌습니다.
+
+alpha = 0.05 로 놓는다면 두 경우 모두 P-value < alpha 이므로 귀무가설을 기각하게 됩니다. 
+
+따라서 종에 따른 평균과 분산은 같다고 말할 수 없습니다. 
+
+&nbsp;
+
+ii) Test both for overall differences and for differences between the prehistoric Thai dogs and each of the other groups singly.
+
+이 문제를 풀기 위해서는 반복문이 필요하고, levels라는 것도 사용하는 것이 용이할 것으로 보입니다. 일단 어떻게 생겼는지 확인하면 
+```{r}
+levels(Species)
+```
+
+데이터에서 나와있는 순서대로 levels들이 정리되어있지 않기 때문에 정리합니다. 
+
+```{r}
+Species <- factor(Species, levels = c("Modern dog", "Golden jackal", "Couns", "Indian wolf", "Prehistoric"))
+detach(CS) 
+CS <- data.frame(CS[, 1:10], Species)
+rm(Species) # 영향을 줄 수 있기에 제거합니다.
+attach(CS)
+levels(Species)
+```
+
+좀 더 나아진 것 같습니다. 
+
+```{r}
+for (i in 1:4){
+  new <- subset(CS, (Species == levels(Species)[i] | Species == levels(Species)[5]))
+  detach(CS)
+  attach(new)
+  
+  a <- hotelling.test(X1 + X2 + X3 + X4 + X5 + X6 + X7 +X8 + X9 ~ matrix(Species)) # 여기서 왜 matrix를 써야하는지는 잘 모르겠습니다.
+  b <- boxM(new[, 1:9], matrix(new[, 11])) # matrix
+  
+  cat(levels(Species)[i], "와 Prehistoric의 관계는 \n")
+  print(a)
+  cat("\n")
+  print(b)
+  cat("\n\n")
+  
+  detach(new)
+  attach(CS)
+}
+```
+
+비교한 결과 모든 p-value 값들이 낮기에 분산과 평균이 같다는 귀무가설을 모두 기각합니다.
+
+하지만 여기서 Modern dog과 Prehistoric의 평균의 비교는 다른 비교들보다 높기에 약간의 가설이 존재할 수 있다고 생각할 수 있습니다. 
+
+&nbsp;
+
+iii)  What conclusion do you draw with regard to the similarity between prehistoric Thai dogs and the other groups? 
+
+i에서의 결과로 모든 종들이 같지는 않을 것이라는 판단을 할 수 있었고, ii의 결과를 통해서 Prehistoric과의 관계를 알 수 있었습니다.
+
+그 중 ii에서 p-value값들은 대체적으로 다 낮았습니다만 평균의 측면에서 Modern과의 관계에서의 p-value 값이 다른 값들에 비해서 큽니다.
+
+그래서 Prehistoric과 Modern dog이 가장 비슷하다는 가설을 세울 수 있을 것 같습니다. 
+
+&nbsp;
+
+## 2)
+성별로 차이가 있는지를 확인하기 위해선 같은 종에서 비교를 해야합니다. 따라서 다음과 같이 비교합니다.
+
+```{r}
+for (i in 1:4){
+  new <- subset(CS, Species == levels(Species)[i])
+  detach(CS)
+  attach(new)
+  
+  a <- hotelling.test(X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 ~ matrix(sex))
+  cat(levels(Species)[i], "의 성별의 차이에 대한 값은 ")
+  print(a)
+  cat("\n")
+
+  detach(new)
+  attach(CS)
+} 
+
+```
+
+alpha = 0.05 로 설정되면 Idian wolf를 제외한 종들은 모두 성별로 차이가 없다고 말할 수 있습니다만
+
+alpha = 0.1 로 설정된다면 Golden jackal과 Indian wolf는 성별로 차이가 있다고 말할 수 있습니다.  
+
+&nbsp;
+
+## 3)
+```{r}
+library(ggplot2) #ggplot을 사용하기 위해서 불러옵니다.  
+new <- subset(CS, Species == "Modern dog")
+a <- as.matrix(new[, 1:9])
+b <- rep(colnames(a), each = length(rownames(a)))
+dim(a) <- c(length(a), 1)
+
+m1 <- data.frame(x = b, y = a)
+
+
+new <- subset(CS, Species == "Prehistoric")
+a <- as.matrix(new[, 1:9])
+b <- rep(colnames(a), each = length(rownames(a)))
+dim(a) <- c(length(a), 1)
+
+m2 <- data.frame(x = b, y = a)
+
+ggplot() + geom_jitter(data = m1, aes(x = x, y = y), alpha = 0.3, col = 4) + 
+  geom_point(data = m2, aes(x =x , y = y), alpha = 0.3, col = 2) + theme_bw()
+```
+
+위 그림은 각 요인별 산점도를 나타냅니다. 파랑색은 Modern dog이며, 빨간색은 Prehistoric입니다. 두 종 모두가 곂치면 보기 어렵기에
+Modern dog 자료를 x축방향으로 흔들어서 보기 쉽게 만들었습니다. 색이 진하게 보인다면 많이 겹쳤다는 것입니다.
+
+대략적인 모습을 확인할 수 있는데, X1에서 Modern dog에서 이상치 같은 값이 하나 있는 것을 제외하곤 상당히 많은 부분이 겹칩니다. 
+ 
+따라서 Modern dog과 Prehistoric이 어느 정도 비슷하다는 생각을 할 수 있습니다.
+
+***
+&nbsp;
+
+```{r}
+#변수 초기화
+rm(list = ls())
+```
+
+&nbsp;
+
+
+# 3
+![](C:/Users/PJS/Desktop/MyR/pic3.jpg)
+
+***
+&nbsp;
+
+# 4
+```{r}
+d1 <- read.csv("Egyptian skulls.csv", header = T, sep = ",")
+attach(d1)
+```
+
+## 1)
+```{r}
+result <- manova(as.matrix(d1[, 2:5]) ~ Period)
+summary(result)
+```
+
+alpha = 0.05 로 놓는다면 P-value < alpha 이기 때문에 귀무가설을 기각하게 됩니다 . 
+
+따라서 Period별로 두개골 자료의 평균들은 같다고 말할 수 없습니다.
+
+## 2)
+```{r}
+boxM(d1[, 2:5], Period)
+```
+alpha = 0.05 로 놓는다면 p-value > alpha 이기 때문에 귀무가설을 기각할 수 없습니다. 
+
+따라서 Period별 두개골 자료의 분산은 같다고 말할 수 있습니다.

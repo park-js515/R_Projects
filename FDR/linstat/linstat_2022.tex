@@ -1,0 +1,120 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% Guidelines for authors for abstracts of LinStat'2022
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% Please use it as a template for your own input, and please
+% follow the instructions in this document.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%RECOMMENDED%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{article}
+
+\textheight 18.9cm\textwidth 11.7cm\topmargin 0cm \hoffset=0cm
+\setlength\oddsidemargin   {2cm}
+\setlength\evensidemargin  {2cm}
+
+\def\title#1{{\Large\bf  \begin{center} #1 \vspace{0pt} \end{center}  } }
+\def\authors#1{{\large\bf \begin{center} #1 \vspace{0pt} \end{center} } }
+\def\university#1{{\sl \begin{center} #1 \vspace{0pt} \end{center} } }
+\def\inst#1{\unskip$^{#1}$}
+
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% AUTHOR_STYLES_AND_DEFINITIONS
+%
+% Please reduce your own definitions and macros to an absolute
+% minimum. Use your own definitions and macros if it is
+% absolutely necessary for typesetting your manuscript.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\title{Development of multiple tests interface \\ using R shiny}
+
+\bigskip 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \authors specifies the authors. Please use initials. 
+% Use the \inst{1} and \inst{2} commands
+% to define the reference mark to your affiliation.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\authors{Juseong Park\inst{1}, Shinjune Kim\inst{2}, Youngjae Kim\inst{3}, \\ Jaesik Jeong\inst{1}
+     }
+
+\smallskip 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% The \university command lets you specify the your affiliation.
+%  Seperate two or more different affiliations by the \\command.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ \university{\inst{1}CNU - Cheonnam National University, Repulic of Korea\\
+ \inst{2}KREI - Korea Rural Economic Institute, Repulic of Korea\\ 
+ \inst{3}Statistics Korea, Repulic of Korea
+       }
+
+
+\bigskip
+
+\noindent {\large\bf Abstract}
+
+\medskip
+
+In the field of genetics, sometimes we want to know the difference between two groups. When extracting and comparing genes to know the difference between these two groups, there may be many genes. Numerous hypotheses arise about this, and we have to reject the hypotheses corresponding to the different genes in response.
+
+A representative method for this is the Bonferroni method, which divides the overall error rate of the experiment by the number of hypotheses to control the error rate for each comparison. However, because Bonferroni's method is too conservative to make a judgment, the number of rejected hypotheses may decrease, which may reduce the power of the experiment. To overcome these shortcomings, a method of controlling the FDR (False Discovery Rate) has emerged.
+
+Methods for controlling FDR are performed under different constraints and produce different results, but there are times when it is desired to compare the results of different methods at the same time. This process is complex and can take a long time. To overcome this limitation, the statistical program R is used to compare and visualize the results of various methods through an easy manipulation method.
+
+ 
+%Persons wishing to present a paper should send their abstract to the
+%Chair of the Local Organizing Committee, Francisco Carvalho, before January
+%31, 2007 - {\it amark@au.poznan.pl}.  Please send the abstract in electronic form to the workshop
+%e-mail address {\it mtriad07@amu.edu.pl}. 
+
+\bigskip
+
+\noindent {\large\bf Keywords}
+
+\medskip
+
+\noindent Mutiple testing, FDR(False Discovery Rate), Interpace
+
+
+\bigskip
+
+\noindent
+{\large\bf References:}
+
+{\small
+\begin{description}
+\itemindent -7.5ex 
+\item
+Yoav Benjamini and Yosef Hochberg. Controlling the false discovery rate: 
+a practical and powerful approach to multiple testing. Journal of the Royal statistical society: series B (Methodological),
+57(1):289-300, 1995
+\item
+Bradley Efron, Robert Tibshirani, John D storey, and Virginia Tusher.
+Empirical bayes analysis of a microarray experiment. Journal of American statistical association, 96(456):1151-1160, 2001.
+\item
+Alexander Ploner, Stefano Calza, Arief Gusnanto, Yudi Pawitan. {\it Bioinformatics}, 
+Volume 22, Issue 5, 1 March 2006, Page 556-565
+
+\end{description}
+
+\end{document}
